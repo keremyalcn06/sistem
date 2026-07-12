@@ -3,6 +3,8 @@ import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "@/lib/player-store";
 import { Play, Pause, RotateCcw, Coffee, Brain } from "lucide-react";
+import { sfx } from "@/lib/sfx";
+
 
 export const Route = createFileRoute("/odak")({
   head: () => ({ meta: [{ title: "Odak Modu — Shadow Monarch" }, { name: "description", content: "Pomodoro tekniğiyle derin çalışma seansı başlat." }] }),
@@ -52,8 +54,10 @@ function Focus() {
     if (remaining === 0) setRemaining(durations[mode]);
     modeAtStartRef.current = mode;
     startedAtRef.current = Date.now();
+    if (mode === "focus") sfx.bossAlert(); else sfx.confirm();
     setRunning(true);
   };
+
 
   const reset = () => { setRunning(false); setRemaining(durations[mode]); };
 
