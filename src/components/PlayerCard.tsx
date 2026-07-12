@@ -1,6 +1,7 @@
 import { usePlayer } from "@/lib/player-store";
 import { Flame, Zap, Trophy, Target } from "lucide-react";
 
+
 export function PlayerCard() {
   const { state, hydrated, xpNeeded } = usePlayer();
   if (!hydrated) return <div className="panel p-6 h-48 animate-pulse" />;
