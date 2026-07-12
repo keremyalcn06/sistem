@@ -209,7 +209,15 @@ export function usePlayer() {
       }
       return { ...s, quests, completedCount, streak, lastActiveDate };
     });
-    if (completedNow) sfx.confirm();
+    if (completedNow) {
+      sfx.confirm();
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          const enabled = localStorage.getItem("system-haptic") !== "0";
+          if (enabled) navigator.vibrate?.(30);
+        } catch { /* noop */ }
+      }
+    }
     if (deltaXp !== 0) addXp(deltaXp);
   }, [addXp]);
 
