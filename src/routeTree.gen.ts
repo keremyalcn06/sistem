@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OdakRouteImport } from './routes/odak'
 import { Route as GorevlerRouteImport } from './routes/gorevler'
 import { Route as IndexRouteImport } from './routes/index'
 
+const OdakRoute = OdakRouteImport.update({
+  id: '/odak',
+  path: '/odak',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GorevlerRoute = GorevlerRouteImport.update({
   id: '/gorevler',
   path: '/gorevler',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/odak': typeof OdakRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/odak': typeof OdakRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/odak': typeof OdakRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gorevler'
+  fullPaths: '/' | '/gorevler' | '/odak'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gorevler'
-  id: '__root__' | '/' | '/gorevler'
+  to: '/' | '/gorevler' | '/odak'
+  id: '__root__' | '/' | '/gorevler' | '/odak'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GorevlerRoute: typeof GorevlerRoute
+  OdakRoute: typeof OdakRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/odak': {
+      id: '/odak'
+      path: '/odak'
+      fullPath: '/odak'
+      preLoaderRoute: typeof OdakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gorevler': {
       id: '/gorevler'
       path: '/gorevler'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GorevlerRoute: GorevlerRoute,
+  OdakRoute: OdakRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
