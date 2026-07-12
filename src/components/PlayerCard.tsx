@@ -1,8 +1,9 @@
 import { usePlayer } from "@/lib/player-store";
 import { Flame, Zap, Trophy, Target } from "lucide-react";
 
+
 export function PlayerCard() {
-  const { state, hydrated, xpNeeded } = usePlayer();
+  const { state, hydrated, xpNeeded, rank } = usePlayer();
   if (!hydrated) return <div className="panel p-6 h-48 animate-pulse" />;
 
   const pct = Math.min(100, (state.xp / xpNeeded) * 100);
@@ -16,12 +17,13 @@ export function PlayerCard() {
 
       <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="min-w-0">
-          <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase">Gölge Askeri</div>
+          <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase">SYSTEM // PLAYER</div>
           <h1 className="font-display text-2xl md:text-4xl mt-1 truncate">{state.name}</h1>
           <div className="text-xs text-muted-foreground mt-1 font-display tracking-widest uppercase">
-            E-Rank Avcı · Sistem Aktif
+            {rank}-Rank · {state.title}
           </div>
         </div>
+
         <div className="shrink-0 text-right">
           <div className="font-display text-[10px] tracking-widest text-muted-foreground uppercase">Seviye</div>
           <div className="font-display text-4xl md:text-5xl text-transparent bg-clip-text bg-[image:var(--gradient-arcane)] animate-glow-pulse rounded-full">
