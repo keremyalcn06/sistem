@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Sword, Timer, BarChart3 } from "lucide-react";
+import { Home, Sword, Timer, BarChart3, User } from "lucide-react";
 import { usePlayer } from "@/lib/player-store";
 import { useEffect, useState } from "react";
 
 const items = [
-  { to: "/", label: "Ana Üs", icon: Home },
-  { to: "/gorevler", label: "Görevler", icon: Sword },
+  { to: "/", label: "Ana", icon: Home },
+  { to: "/gorevler", label: "Görev", icon: Sword },
   { to: "/odak", label: "Odak", icon: Timer },
-  { to: "/istatistik", label: "İstatistik", icon: BarChart3 },
+  { to: "/istatistik", label: "Stat", icon: BarChart3 },
+  { to: "/profil", label: "Profil", icon: User },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -27,9 +28,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pct = hydrated ? Math.min(100, (state.xp / xpNeeded) * 100) : 0;
 
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:pl-64">
+    <div className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8 md:pl-64 select-none">
+      {/* Mobile top status bar */}
+      <header className="md:hidden sticky top-0 z-30 backdrop-blur-lg bg-background/80 border-b border-border pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center justify-between px-4 h-12">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 grid place-items-center rounded-md panel-glow">
+              <span className="font-display text-primary text-xs">S</span>
+            </div>
+            <span className="font-display text-[11px] tracking-[0.3em] text-primary uppercase">SYSTEM</span>
+          </div>
+          {hydrated && (
+            <div className="flex items-center gap-2">
+              <span className="font-display text-[10px] tracking-widest text-muted-foreground uppercase">LV.{state.level}</span>
+              <div className="w-16 h-1.5 bg-input rounded-full overflow-hidden border border-border">
+                <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
       {/* Sidebar (desktop) / Bottom nav (mobile) */}
-      <nav className="fixed z-40 bottom-0 left-0 right-0 md:top-0 md:right-auto md:h-screen md:w-64 md:border-r border-t md:border-t-0 border-border backdrop-blur-lg bg-background/85">
+      <nav className="fixed z-40 bottom-0 left-0 right-0 md:top-0 md:right-auto md:h-screen md:w-64 md:border-r border-t md:border-t-0 border-border backdrop-blur-lg bg-background/90 pb-[env(safe-area-inset-bottom)] md:pb-0">
         <div className="hidden md:flex flex-col h-full p-6 gap-6">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 grid place-items-center rounded-md panel-glow">
@@ -70,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Mobile bottom nav */}
-        <div className="md:hidden grid grid-cols-4">
+        <div className="md:hidden grid grid-cols-5">
           {items.map((it) => (
             <Link
               key={it.to}
@@ -78,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               activeOptions={{ exact: it.to === "/" }}
               activeProps={{ className: "text-primary" }}
               inactiveProps={{ className: "text-muted-foreground" }}
-              className="flex flex-col items-center gap-1 py-3 font-display text-[10px] tracking-widest uppercase"
+              className="flex flex-col items-center gap-1 py-2.5 font-display text-[9px] tracking-widest uppercase active:scale-95 transition-transform"
             >
               <it.icon className="w-5 h-5" />
               {it.label}
@@ -87,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-5xl px-4 md:px-8 py-6 md:py-10 animate-fade-in">
+      <main className="mx-auto max-w-5xl px-4 md:px-8 py-5 md:py-10 animate-fade-in">
         {children}
       </main>
 
