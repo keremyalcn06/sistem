@@ -94,14 +94,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {levelUp !== null && (
         <div className="fixed inset-0 z-50 grid place-items-center pointer-events-none">
           <div className="animate-level-up text-center">
-            <div className="font-display text-xs tracking-[0.4em] text-primary mb-2">SEVİYE ATLADIN</div>
+            <div className="font-display text-xs tracking-[0.4em] text-primary mb-2">SYSTEM // LEVEL UP</div>
             <div className="font-display text-7xl md:text-8xl text-transparent bg-clip-text bg-[image:var(--gradient-arcane)]" style={{ textShadow: "0 0 40px oklch(0.75 0.18 220 / 60%)" }}>
               LV. {levelUp}
             </div>
-            <div className="font-display text-xs tracking-[0.3em] text-muted-foreground mt-2">Sistem seni yükseltti</div>
+            <div className="font-display text-xs tracking-[0.3em] text-muted-foreground mt-2">Yeni seviye kaydedildi</div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

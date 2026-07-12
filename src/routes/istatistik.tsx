@@ -9,7 +9,7 @@ export const Route = createFileRoute("/istatistik")({
 });
 
 function Stats() {
-  const { state, hydrated, xpNeeded, reset, setName } = usePlayer();
+  const { state, hydrated, xpNeeded, reset, setName, rank } = usePlayer();
   if (!hydrated) return <AppShell><div className="panel p-6 h-64 animate-pulse" /></AppShell>;
 
   const totalFocusMin = state.focusSessions.reduce((a, s) => a + s.minutes, 0);
@@ -29,19 +29,39 @@ function Stats() {
   }
   const maxMin = Math.max(60, ...days.map((d) => d.minutes));
 
+  const totalAttempts = state.completedCount + state.failedCount;
+  const successRate = totalAttempts > 0 ? Math.round((state.completedCount / totalAttempts) * 100) : 0;
+
   return (
     <AppShell>
       <div className="mb-6">
-        <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase">Avcı Kaydı</div>
+        <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase">SYSTEM // KAYIT</div>
         <h1 className="font-display text-3xl md:text-4xl mt-1">İstatistikler</h1>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <Kpi label="Rank" value={rank} />
         <Kpi label="Seviye" value={state.level} />
         <Kpi label="Toplam XP" value={state.totalXp.toLocaleString("tr-TR")} />
-        <Kpi label="Seri" value={`${state.streak} gün`} />
         <Kpi label="Odak Süresi" value={`${totalFocusMin} dk`} />
       </div>
+
+      <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <Kpi label="Günlük Seri" value={`${state.streak} gün`} />
+        <Kpi label="Haftalık Seri" value={`${state.weeklyStreak}`} />
+        <Kpi label="Tamamlanan" value={state.completedCount} />
+        <Kpi label="Başarısız" value={state.failedCount} />
+      </div>
+
+      <div className="panel p-5 md:p-6 mb-6">
+        <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase mb-3">SYSTEM // ANALİZ</div>
+        <ul className="space-y-1.5 font-mono text-sm text-foreground/90">
+          <li>&gt; Görev başarı oranı: %{successRate} ({state.completedCount}/{totalAttempts || 0}).</li>
+          <li>&gt; Ortalama seans süresi: {focusSessions > 0 ? Math.round(totalFocusMin / focusSessions) : 0} dk.</li>
+          <li>&gt; Title: {state.title}.</li>
+        </ul>
+      </div>
+
 
       <div className="panel p-5 md:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
