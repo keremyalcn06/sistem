@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OdakRouteImport } from './routes/odak'
+import { Route as IstatistikRouteImport } from './routes/istatistik'
 import { Route as GorevlerRouteImport } from './routes/gorevler'
 import { Route as IndexRouteImport } from './routes/index'
 
 const OdakRoute = OdakRouteImport.update({
   id: '/odak',
   path: '/odak',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IstatistikRoute = IstatistikRouteImport.update({
+  id: '/istatistik',
+  path: '/istatistik',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GorevlerRoute = GorevlerRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gorevler': typeof GorevlerRoute
+  '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gorevler' | '/odak'
+  fullPaths: '/' | '/gorevler' | '/istatistik' | '/odak'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gorevler' | '/odak'
-  id: '__root__' | '/' | '/gorevler' | '/odak'
+  to: '/' | '/gorevler' | '/istatistik' | '/odak'
+  id: '__root__' | '/' | '/gorevler' | '/istatistik' | '/odak'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GorevlerRoute: typeof GorevlerRoute
+  IstatistikRoute: typeof IstatistikRoute
   OdakRoute: typeof OdakRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/odak'
       fullPath: '/odak'
       preLoaderRoute: typeof OdakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/istatistik': {
+      id: '/istatistik'
+      path: '/istatistik'
+      fullPath: '/istatistik'
+      preLoaderRoute: typeof IstatistikRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gorevler': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GorevlerRoute: GorevlerRoute,
+  IstatistikRoute: IstatistikRoute,
   OdakRoute: OdakRoute,
 }
 export const routeTree = rootRouteImport
