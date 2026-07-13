@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { usePlayer } from "@/lib/player-store";
-import { Settings, Trophy, Flame, Target, Zap, Calendar } from "lucide-react";
+import { ACHIEVEMENTS } from "@/lib/achievements";
+import { Settings, Trophy, Flame, Target, Zap, Calendar, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/profil")({
   head: () => ({
@@ -13,25 +14,18 @@ export const Route = createFileRoute("/profil")({
   component: Profile,
 });
 
-type Achievement = { id: string; label: string; desc: string; unlocked: boolean };
-
 function Profile() {
-  const { state, hydrated, xpNeeded, rank } = usePlayer();
+  const { state, hydrated, xpNeeded, rank, discipline, totalFocusMin } = usePlayer();
   if (!hydrated) return <AppShell><div className="panel p-6 h-64 animate-pulse" /></AppShell>;
 
-  const totalFocusMin = state.focusSessions.reduce((a, s) => a + s.minutes, 0);
   const pct = Math.min(100, (state.xp / xpNeeded) * 100);
 
-  const achievements: Achievement[] = [
-    { id: "first", label: "İlk Adım", desc: "İlk görevi tamamla", unlocked: state.completedCount >= 1 },
-    { id: "streak3", label: "3 Gün Seri", desc: "3 gün üst üste aktif", unlocked: state.streak >= 3 },
-    { id: "streak7", label: "7 Gün Seri", desc: "1 hafta kesintisiz", unlocked: state.streak >= 7 },
-    { id: "focus60", label: "60 dk Odak", desc: "Toplam 60 dk odak", unlocked: totalFocusMin >= 60 },
-    { id: "focus300", label: "5 Saat Derin", desc: "Toplam 300 dk odak", unlocked: totalFocusMin >= 300 },
-    { id: "lv5", label: "Rank E", desc: "5. seviyeye ulaş", unlocked: state.level >= 5 },
-    { id: "lv10", label: "Rank D", desc: "10. seviyeye ulaş", unlocked: state.level >= 10 },
-    { id: "q50", label: "50 Görev", desc: "50 görev tamamla", unlocked: state.completedCount >= 50 },
-  ];
+  const achievements = ACHIEVEMENTS.map((a) => ({
+    id: a.id,
+    label: a.label,
+    desc: a.desc,
+    unlocked: !!state.achievements[a.id],
+  }));
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
   const memberSince = new Date(state.createdAt).toLocaleDateString("tr-TR", {
@@ -84,7 +78,9 @@ function Profile() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <MiniStat icon={Flame} label="Seri" value={`${state.streak} gün`} />
         <MiniStat icon={Target} label="Tamamlanan" value={state.completedCount} />
+        <MiniStat icon={ShieldCheck} label="Disiplin" value={discipline.toLocaleString("tr-TR")} />
         <MiniStat icon={Zap} label="Toplam XP" value={state.totalXp.toLocaleString("tr-TR")} />
+        <MiniStat icon={Trophy} label="Odak" value={`${totalFocusMin} dk`} />
         <MiniStat icon={Calendar} label="Kayıt" value={memberSince} />
       </div>
 

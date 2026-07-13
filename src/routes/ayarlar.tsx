@@ -19,7 +19,7 @@ const HAPTIC_KEY = "system-haptic";
 const NOTIF_KEY = "system-notif";
 
 function Settings() {
-  const { state, hydrated, setName, reset } = usePlayer();
+  const { state, hydrated, setName, reset, exportSnapshot, importSnapshot } = usePlayer();
   const [muted, setMutedState] = useState(false);
   const [haptic, setHaptic] = useState(true);
   const [notif, setNotif] = useState<"default" | "granted" | "denied" | "unsupported">("default");
@@ -58,9 +58,9 @@ function Settings() {
     }
   };
 
-  const exportData = () => {
+  const exportData = async () => {
     try {
-      const raw = localStorage.getItem("shadow-monarch-v1") ?? "{}";
+      const raw = await exportSnapshot();
       const blob = new Blob([raw], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -73,15 +73,9 @@ function Settings() {
 
   const importData = (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const text = String(reader.result);
-        JSON.parse(text);
-        localStorage.setItem("shadow-monarch-v1", text);
-        location.reload();
-      } catch {
-        alert("Geçersiz veri dosyası.");
-      }
+    reader.onload = async () => {
+      const ok = await importSnapshot(String(reader.result));
+      if (!ok) alert("Geçersiz veri dosyası.");
     };
     reader.readAsText(file);
   };
