@@ -1,11 +1,32 @@
 import { useEffect, useState, useCallback } from "react";
 import { sfx } from "./sfx";
+import {
+  computeQuestXp,
+  computeDiscipline,
+  computeTitle,
+  rankForLevel,
+  xpForLevel,
+  type Category,
+  type Difficulty,
+  type Priority,
+} from "./economy";
+import { getRepository } from "./storage/adapters";
+import { STORAGE_KEYS, type StoredEnvelope } from "./storage/repository";
+import { ACHIEVEMENTS, evaluateAchievements, type UnlockedMap } from "./achievements";
+
+// ---------------------------------------------------------------------------
+// Domain types
+// ---------------------------------------------------------------------------
 
 export type Quest = {
   id: string;
   title: string;
+  category: Category;
+  difficulty: Difficulty;
+  priority: Priority;
+  durationMin: number;
+  /** SYSTEM-computed at creation from the four objective inputs above. */
   xp: number;
-  category: "body" | "mind" | "soul" | "custom";
   done: boolean;
 };
 
@@ -13,8 +34,6 @@ export type FocusSession = {
   date: string; // ISO
   minutes: number;
 };
-
-export type Rank = "F" | "E" | "D" | "C" | "B" | "A" | "S";
 
 export type PlayerState = {
   initialized: boolean;
@@ -25,7 +44,7 @@ export type PlayerState = {
   streak: number;
   weeklyStreak: number;
   lastActiveDate: string | null; // yyyy-mm-dd
-  lastWeekIso: string | null; // yyyy-Www
+  lastWeekIso: string | null;
   quests: Quest[];
   questsDate: string; // yyyy-mm-dd
   completedCount: number;
@@ -33,14 +52,23 @@ export type PlayerState = {
   focusSessions: FocusSession[];
   createdAt: string;
   title: string;
+  /** Unlocked achievement id → ISO timestamp. */
+  achievements: UnlockedMap;
 };
 
-const KEY = "shadow-monarch-v1";
+export type { Category, Difficulty, Priority } from "./economy";
+export { rankForLevel, xpForLevel, type Rank } from "./economy";
+
+// ---------------------------------------------------------------------------
+// Persistence
+// ---------------------------------------------------------------------------
+
+const SCHEMA_VERSION = 2;
+const repo = getRepository();
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const weekKey = (d = new Date()) => {
-  // ISO week (yyyy-Www)
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const day = t.getUTCDay() || 7;
   t.setUTCDate(t.getUTCDate() + 4 - day);
@@ -49,17 +77,22 @@ const weekKey = (d = new Date()) => {
   return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 };
 
-const DEFAULT_QUESTS: Omit<Quest, "id" | "done">[] = [
-  { title: "50 şınav çek", xp: 30, category: "body" },
-  { title: "20 dakika yürüyüş", xp: 25, category: "body" },
-  { title: "2 litre su iç", xp: 20, category: "body" },
-  { title: "30 dakika kitap oku", xp: 35, category: "mind" },
-  { title: "10 dakika meditasyon", xp: 25, category: "soul" },
-  { title: "Yeni bir şey öğren", xp: 40, category: "mind" },
+const DEFAULT_QUESTS: Omit<Quest, "id" | "done" | "xp">[] = [
+  { title: "50 şınav çek",         category: "body", difficulty: "normal", priority: "normal", durationMin: 15 },
+  { title: "20 dakika yürüyüş",    category: "body", difficulty: "easy",   priority: "normal", durationMin: 20 },
+  { title: "2 litre su iç",        category: "body", difficulty: "trivial",priority: "high",   durationMin: 5 },
+  { title: "30 dakika kitap oku",  category: "mind", difficulty: "normal", priority: "normal", durationMin: 30 },
+  { title: "10 dakika meditasyon", category: "soul", difficulty: "easy",   priority: "normal", durationMin: 10 },
+  { title: "Yeni bir şey öğren",   category: "mind", difficulty: "hard",   priority: "high",   durationMin: 45 },
 ];
 
 const genQuests = (): Quest[] =>
-  DEFAULT_QUESTS.map((q, i) => ({ ...q, id: `q-${Date.now()}-${i}`, done: false }));
+  DEFAULT_QUESTS.map((q, i) => ({
+    ...q,
+    id: `q-${Date.now()}-${i}`,
+    done: false,
+    xp: computeQuestXp(q),
+  }));
 
 const initial = (): PlayerState => ({
   initialized: false,
@@ -78,97 +111,162 @@ const initial = (): PlayerState => ({
   focusSessions: [],
   createdAt: new Date().toISOString(),
   title: "Beginner",
+  achievements: {},
 });
 
-export const xpForLevel = (level: number) => 100 + (level - 1) * 50;
+/**
+ * Migrate any legacy stored quest shape (pre-v2: had `xp` but no difficulty)
+ * into the current schema. Idempotent.
+ */
+function migrateQuest(raw: Partial<Quest> & { xp?: number }): Quest {
+  const difficulty: Difficulty = raw.difficulty ?? "normal";
+  const priority: Priority = raw.priority ?? "normal";
+  const category: Category = raw.category ?? "custom";
+  const durationMin = raw.durationMin ?? Math.max(5, Math.round((raw.xp ?? 20) / 2));
+  const inputs = { difficulty, priority, category, durationMin };
+  return {
+    id: raw.id ?? `q-${Date.now()}`,
+    title: raw.title ?? "",
+    category,
+    difficulty,
+    priority,
+    durationMin,
+    xp: computeQuestXp(inputs),
+    done: !!raw.done,
+  };
+}
 
-export const rankForLevel = (level: number): Rank => {
-  if (level >= 80) return "S";
-  if (level >= 55) return "A";
-  if (level >= 35) return "B";
-  if (level >= 20) return "C";
-  if (level >= 10) return "D";
-  if (level >= 5) return "E";
-  return "F";
-};
+function migrate(anyState: Partial<PlayerState> & Record<string, unknown>): PlayerState {
+  const base = initial();
+  const merged: PlayerState = { ...base, ...(anyState as Partial<PlayerState>) };
+  merged.quests = Array.isArray(anyState.quests)
+    ? (anyState.quests as Partial<Quest>[]).map(migrateQuest)
+    : base.quests;
+  merged.achievements = (anyState.achievements as UnlockedMap) ?? {};
+  return merged;
+}
 
-export const titleForLevel = (level: number): string => {
-  if (level >= 80) return "Shadow Monarch";
-  if (level >= 55) return "Elite Hunter";
-  if (level >= 35) return "Veteran";
-  if (level >= 20) return "Awakened";
-  if (level >= 10) return "Rookie Hunter";
-  if (level >= 5) return "Trainee";
-  return "Beginner";
-};
-
-const load = (): PlayerState => {
-  if (typeof window === "undefined") return initial();
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return initial();
-    const parsed = { ...initial(), ...(JSON.parse(raw) as Partial<PlayerState>) } as PlayerState;
-    // Daily rollover: any unfinished quests become failures.
-    if (parsed.questsDate !== todayStr()) {
-      const unfinished = parsed.quests.filter((q) => !q.done).length;
-      parsed.failedCount = (parsed.failedCount ?? 0) + unfinished;
-      // Streak decay if user missed a day
-      if (parsed.lastActiveDate) {
-        const y = new Date(); y.setDate(y.getDate() - 1);
-        const yStr = y.toISOString().slice(0, 10);
-        if (parsed.lastActiveDate !== yStr && parsed.lastActiveDate !== todayStr()) {
-          parsed.streak = 0;
-        }
-      }
-      parsed.quests = genQuests();
-      parsed.questsDate = todayStr();
+function applyRollovers(s: PlayerState): PlayerState {
+  const today = todayStr();
+  let next = s;
+  if (next.questsDate !== today) {
+    const unfinished = next.quests.filter((q) => !q.done).length;
+    let streak = next.streak;
+    if (next.lastActiveDate) {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      const yStr = y.toISOString().slice(0, 10);
+      if (next.lastActiveDate !== yStr && next.lastActiveDate !== today) streak = 0;
     }
-    // Weekly rollover
-    const wk = weekKey();
-    if (parsed.lastWeekIso !== wk) {
-      // If they had any activity in the previous week, increment weeklyStreak; otherwise reset.
-      if (parsed.lastWeekIso && parsed.completedCount > 0) {
-        parsed.weeklyStreak = (parsed.weeklyStreak ?? 0) + 1;
-      } else if (!parsed.lastWeekIso) {
-        parsed.weeklyStreak = 0;
-      }
-      parsed.lastWeekIso = wk;
-    }
-    parsed.title = titleForLevel(parsed.level);
-    return parsed;
-  } catch {
-    return initial();
+    next = {
+      ...next,
+      failedCount: next.failedCount + unfinished,
+      streak,
+      quests: genQuests(),
+      questsDate: today,
+    };
   }
-};
+  const wk = weekKey();
+  if (next.lastWeekIso !== wk) {
+    let weeklyStreak = next.weeklyStreak;
+    if (next.lastWeekIso && next.completedCount > 0) weeklyStreak = weeklyStreak + 1;
+    else if (!next.lastWeekIso) weeklyStreak = 0;
+    next = { ...next, weeklyStreak, lastWeekIso: wk };
+  }
+  return recomputeDerived(next);
+}
 
-const save = (s: PlayerState) => {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* noop */ }
-};
+function recomputeDerived(s: PlayerState): PlayerState {
+  const totalFocusMin = s.focusSessions.reduce((a, x) => a + x.minutes, 0);
+  const discipline = computeDiscipline(s);
+  const { unlocked } = evaluateAchievements(s, { totalFocusMin, discipline }, s.achievements);
+  const title = computeTitle({
+    level: s.level,
+    completedCount: s.completedCount,
+    streak: s.streak,
+    achievements: Object.keys(unlocked).length,
+    discipline,
+  });
+  return { ...s, achievements: unlocked, title };
+}
 
+// ---------------------------------------------------------------------------
+// In-memory cache + repository I/O
+// ---------------------------------------------------------------------------
+
+let cached: PlayerState = initial();
+let hydratedGlobal = false;
 const listeners = new Set<() => void>();
-let cached: PlayerState | null = null;
-const get = () => (cached ??= load());
-const set = (updater: (s: PlayerState) => PlayerState) => {
-  cached = updater(get());
-  save(cached);
-  listeners.forEach((l) => l());
-};
+const notify = () => listeners.forEach((l) => l());
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const envelope: StoredEnvelope<PlayerState> = {
+      v: SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      data: cached,
+    };
+    void repo.set(STORAGE_KEYS.player, JSON.stringify(envelope));
+  }, 120);
+}
+
+async function hydrateOnce() {
+  if (hydratedGlobal) return;
+  try {
+    let raw = await repo.get(STORAGE_KEYS.player);
+    // One-time migration from the pre-v2 localStorage key.
+    if (!raw) {
+      const legacy = await repo.get(STORAGE_KEYS.legacyPlayer);
+      if (legacy) {
+        raw = JSON.stringify({ v: 1, updatedAt: new Date().toISOString(), data: JSON.parse(legacy) });
+      }
+    }
+    if (raw) {
+      const parsed = JSON.parse(raw) as StoredEnvelope<PlayerState> | PlayerState;
+      const data = (parsed as StoredEnvelope<PlayerState>).data ?? (parsed as PlayerState);
+      cached = applyRollovers(migrate(data));
+    } else {
+      cached = applyRollovers(initial());
+    }
+  } catch {
+    cached = applyRollovers(initial());
+  }
+  hydratedGlobal = true;
+  scheduleSave();
+  notify();
+}
+
+function commit(updater: (s: PlayerState) => PlayerState) {
+  cached = recomputeDerived(updater(cached));
+  scheduleSave();
+  notify();
+}
+
+// ---------------------------------------------------------------------------
+// Public hook
+// ---------------------------------------------------------------------------
 
 export function usePlayer() {
   const [, force] = useState(0);
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(hydratedGlobal);
+
   useEffect(() => {
-    cached = load();
-    setHydrated(true);
-    const l = () => force((n) => n + 1);
+    let mounted = true;
+    void hydrateOnce().then(() => { if (mounted) setHydrated(true); });
+    const l = () => {
+      if (!mounted) return;
+      force((n) => n + 1);
+      if (hydratedGlobal) setHydrated(true);
+    };
     listeners.add(l);
-    return () => { listeners.delete(l); };
+    return () => { mounted = false; listeners.delete(l); };
   }, []);
 
-  const state = hydrated ? get() : initial();
+  const state = hydrated ? cached : initial();
 
   const addXp = useCallback((amount: number) => {
-    set((s) => {
+    commit((s) => {
       let xp = s.xp + amount;
       let level = s.level;
       let leveled = false;
@@ -184,21 +282,21 @@ export function usePlayer() {
           window.dispatchEvent(new CustomEvent("player:levelup", { detail: { level } }));
         }
       }
-      return { ...s, xp, level, totalXp: s.totalXp + amount, title: titleForLevel(level) };
+      return { ...s, xp, level, totalXp: Math.max(0, s.totalXp + amount) };
     });
   }, []);
 
   const toggleQuest = useCallback((id: string) => {
     let deltaXp = 0;
     let completedNow = false;
-    set((s) => {
+    commit((s) => {
       const quests = s.quests.map((q) => {
         if (q.id !== id) return q;
         if (!q.done) { deltaXp = q.xp; completedNow = true; }
         else { deltaXp = -q.xp; }
         return { ...q, done: !q.done };
       });
-      const completedCount = s.completedCount + (completedNow ? 1 : -1);
+      const completedCount = Math.max(0, s.completedCount + (completedNow ? 1 : -1));
       let streak = s.streak;
       let lastActiveDate = s.lastActiveDate;
       if (completedNow && lastActiveDate !== todayStr()) {
@@ -221,49 +319,92 @@ export function usePlayer() {
     if (deltaXp !== 0) addXp(deltaXp);
   }, [addXp]);
 
-  const addCustomQuest = useCallback((title: string, xp: number) => {
-    set((s) => ({
+  const addCustomQuest = useCallback((input: {
+    title: string;
+    category?: Category;
+    difficulty?: Difficulty;
+    priority?: Priority;
+    durationMin?: number;
+  }) => {
+    const category = input.category ?? "custom";
+    const difficulty = input.difficulty ?? "normal";
+    const priority = input.priority ?? "normal";
+    const durationMin = Math.max(1, Math.round(input.durationMin ?? 15));
+    const xp = computeQuestXp({ category, difficulty, priority, durationMin });
+    commit((s) => ({
       ...s,
-      quests: [...s.quests, { id: `q-${Date.now()}`, title, xp, category: "custom", done: false }],
+      quests: [
+        ...s.quests,
+        {
+          id: `q-${Date.now()}`,
+          title: input.title,
+          category,
+          difficulty,
+          priority,
+          durationMin,
+          xp,
+          done: false,
+        },
+      ],
     }));
   }, []);
 
   const removeQuest = useCallback((id: string) => {
-    set((s) => ({ ...s, quests: s.quests.filter((q) => q.id !== id) }));
+    commit((s) => ({ ...s, quests: s.quests.filter((q) => q.id !== id) }));
   }, []);
 
   const logFocus = useCallback((minutes: number) => {
-    set((s) => ({
+    commit((s) => ({
       ...s,
       focusSessions: [...s.focusSessions, { date: new Date().toISOString(), minutes }],
     }));
-    addXp(Math.round(minutes * 2));
+    // Focus XP uses the same economy: treat as a "normal / soul" session.
+    addXp(computeQuestXp({ durationMin: minutes, difficulty: "normal", priority: "normal", category: "soul" }));
   }, [addXp]);
 
   const setName = useCallback((name: string) => {
-    set((s) => ({ ...s, name }));
+    commit((s) => ({ ...s, name }));
   }, []);
 
   const acceptSystem = useCallback((name?: string) => {
-    set((s) => ({
+    commit((s) => ({
       ...s,
       initialized: true,
       name: name?.trim() || "Player",
-      level: 1,
-      xp: 0,
-      totalXp: 0,
-      streak: 0,
-      completedCount: 0,
-      failedCount: 0,
-      title: "Beginner",
     }));
   }, []);
 
   const reset = useCallback(() => {
-    set(() => initial());
+    cached = applyRollovers(initial());
+    scheduleSave();
+    notify();
   }, []);
 
+  const exportSnapshot = useCallback(async (): Promise<string> => {
+    const envelope: StoredEnvelope<PlayerState> = {
+      v: SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      data: cached,
+    };
+    return JSON.stringify(envelope, null, 2);
+  }, []);
+
+  const importSnapshot = useCallback(async (raw: string): Promise<boolean> => {
+    try {
+      const parsed = JSON.parse(raw) as StoredEnvelope<PlayerState> | PlayerState;
+      const data = (parsed as StoredEnvelope<PlayerState>).data ?? (parsed as PlayerState);
+      cached = applyRollovers(migrate(data));
+      scheduleSave();
+      notify();
+      return true;
+    } catch { return false; }
+  }, []);
+
+  const totalFocusMin = state.focusSessions.reduce((a, s) => a + s.minutes, 0);
+  const discipline = computeDiscipline(state);
   const rank = rankForLevel(state.level);
+  const achievementCount = Object.keys(state.achievements).length;
+
   return {
     state,
     hydrated,
@@ -275,7 +416,13 @@ export function usePlayer() {
     setName,
     acceptSystem,
     reset,
+    exportSnapshot,
+    importSnapshot,
     xpNeeded: xpForLevel(state.level),
     rank,
+    discipline,
+    totalFocusMin,
+    achievementCount,
+    totalAchievements: ACHIEVEMENTS.length,
   };
 }
