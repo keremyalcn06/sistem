@@ -78,7 +78,9 @@ function Profile() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <MiniStat icon={Flame} label="Seri" value={`${state.streak} gün`} />
         <MiniStat icon={Target} label="Tamamlanan" value={state.completedCount} />
+        <MiniStat icon={ShieldCheck} label="Disiplin" value={discipline.toLocaleString("tr-TR")} />
         <MiniStat icon={Zap} label="Toplam XP" value={state.totalXp.toLocaleString("tr-TR")} />
+        <MiniStat icon={Trophy} label="Odak" value={`${totalFocusMin} dk`} />
         <MiniStat icon={Calendar} label="Kayıt" value={memberSince} />
       </div>
 
