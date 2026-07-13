@@ -96,6 +96,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    import("../lib/native/lifecycle").then(({ initNativeLifecycle }) => {
+      initNativeLifecycle().then((fn) => { cleanup = fn; });
+    }).catch(() => {});
+    return () => { cleanup?.(); };
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
