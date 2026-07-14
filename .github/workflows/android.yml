@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -26,17 +25,13 @@ jobs:
       - name: Build Web
         run: npm run build
 
-      - name: Create Android Web Folder
+      - name: Prepare Android Assets
         run: |
-          rm -rf android-webroot
-          mkdir android-webroot
-          cp -r .output/public/* android-webroot/
-          touch android-webroot/index.html
+          mkdir -p android/app/src/main/assets/public
+          cp -r .output/public/* android/app/src/main/assets/public/
 
-      - name: Install Capacitor Android
-        run: |
-          npm install @capacitor/android
-          npx cap sync android
+      - name: Capacitor Sync
+        run: npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -44,7 +39,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Setup Android
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Build APK
