@@ -436,6 +436,10 @@ export function usePlayer() {
   const discipline = computeDiscipline(state);
   const rank = rankForLevel(state.level);
   const achievementCount = Object.keys(state.achievements).length;
+  const profilePct = profileCompletion(state.profile);
+  // Recent success rate — used by SYSTEM CORE for load / difficulty adaptation.
+  const totalAttempts = state.completedCount + state.failedCount;
+  const recentSuccessRate = totalAttempts > 0 ? state.completedCount / totalAttempts : 0.5;
 
   return {
     state,
@@ -447,6 +451,7 @@ export function usePlayer() {
     logFocus,
     setName,
     acceptSystem,
+    updateProfile,
     reset,
     exportSnapshot,
     importSnapshot,
@@ -456,5 +461,7 @@ export function usePlayer() {
     totalFocusMin,
     achievementCount,
     totalAchievements: ACHIEVEMENTS.length,
+    profileCompletion: profilePct,
+    recentSuccessRate,
   };
 }
