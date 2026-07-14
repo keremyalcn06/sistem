@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -28,12 +29,13 @@ jobs:
           npx cap add android || true
 
       - name: Build Web
-        run: npm run android:build
+        run: npm run build
 
       - name: Prepare Android Web Assets
         run: |
-          mkdir -p android-webroot
-          cp -r .output/public/* android-webroot/
+          rm -rf android-webroot
+          mkdir android-webroot
+          cp -r dist/* android-webroot/
 
       - name: Sync Capacitor
         run: npx cap sync android
