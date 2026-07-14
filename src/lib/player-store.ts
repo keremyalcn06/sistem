@@ -60,7 +60,11 @@ export type PlayerState = {
   title: string;
   /** Unlocked achievement id → ISO timestamp. */
   achievements: UnlockedMap;
+  /** Extended personal profile collected during first-run onboarding. */
+  profile: PlayerProfile;
 };
+
+export type { PlayerProfile } from "./profile";
 
 export type { Category, Difficulty, Priority } from "./economy";
 export { rankForLevel, xpForLevel, type Rank } from "./economy";
