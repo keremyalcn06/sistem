@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "@/lib/player-store";
 import { sfx, unlockAudio } from "@/lib/sfx";
+import { Onboarding } from "./Onboarding";
+import type { PlayerProfile } from "@/lib/profile";
 
-type Phase = "booting" | "linking" | "prompt" | "rejected" | "accepting" | "done";
+type Phase = "booting" | "linking" | "prompt" | "rejected" | "onboarding" | "accepting" | "done";
 
 const BOOT_LINES = [
   "> SYSTEM INITIALIZING...",
@@ -20,10 +22,11 @@ export function SystemBoot() {
 
   useEffect(() => {
     if (!hydrated) return;
+    // Already-onboarded players never see this flow again — not on updates,
+    // not after a re-hydrate. `initialized` is the single source of truth.
     if (state.initialized) { setPhase("done"); return; }
     if (bootedRef.current) return;
     bootedRef.current = true;
-    // Try to play boot immediately; if AudioContext is locked it will play on first click.
     unlockAudio();
     sfx.boot();
   }, [hydrated, state.initialized]);
@@ -48,14 +51,24 @@ export function SystemBoot() {
 
   const accept = () => {
     sfx.confirm();
-    setPhase("accepting");
-    setTimeout(() => acceptSystem(name), 700);
+    // Instead of finalising here, open the extended Player Analysis wizard.
+    setPhase("onboarding");
   };
 
   const reject = () => {
     sfx.reject();
     setPhase("rejected");
   };
+
+  const finishOnboarding = (profile: PlayerProfile) => {
+    setPhase("accepting");
+    setTimeout(() => acceptSystem(profile.realName, profile), 600);
+  };
+
+  if (phase === "onboarding") {
+    return <Onboarding onDone={finishOnboarding} />;
+  }
+
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-background/95 backdrop-blur-md animate-fade-in px-4">
