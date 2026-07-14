@@ -1,4 +1,4 @@
-kname: Android APK
+name: Android APK
 
 on:
   push:
