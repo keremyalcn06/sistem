@@ -14,6 +14,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+- name: Add Android Platform
+  run: |
+    npx cap add android || true
+
+- name: Sync Capacitor
+  run: npx cap sync android
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
