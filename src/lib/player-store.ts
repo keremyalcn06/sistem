@@ -154,6 +154,9 @@ function migrate(anyState: Partial<PlayerState> & Record<string, unknown>): Play
     ? (anyState.quests as Partial<Quest>[]).map(migrateQuest)
     : base.quests;
   merged.achievements = (anyState.achievements as UnlockedMap) ?? {};
+  // Merge profile so schema additions get filled with defaults instead of
+  // wiping user-entered fields. Old saves without `profile` get an empty one.
+  merged.profile = { ...emptyProfile(), ...(anyState.profile as Partial<PlayerProfile> | undefined ?? {}) };
   return merged;
 }
 
