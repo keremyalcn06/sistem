@@ -26,19 +26,25 @@ jobs:
       - name: Build Web
         run: npm run build
 
-      - name: Prepare Android
+      - name: Create Android Web Folder
+        run: |
+          rm -rf android-webroot
+          mkdir android-webroot
+          cp -r .output/public/* android-webroot/
+          touch android-webroot/index.html
+
+      - name: Install Capacitor Android
         run: |
           npm install @capacitor/android
-          node scripts/prepare-android.mjs
           npx cap sync android
 
-      - name: Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
       - name: Build APK
@@ -47,7 +53,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SYSTEM-APK

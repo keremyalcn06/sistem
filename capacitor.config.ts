@@ -3,13 +3,15 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'app.lovable.system',
   appName: 'SYSTEM',
-  webDir: '.output/public',
+
+  webDir: 'android-webroot',
 
   plugins: {
     SplashScreen: {
       launchShowDuration: 800,
       launchAutoHide: true,
     },
+
     StatusBar: {
       style: 'DARK',
     }
