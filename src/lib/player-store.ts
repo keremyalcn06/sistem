@@ -380,12 +380,30 @@ export function usePlayer() {
     commit((s) => ({ ...s, name }));
   }, []);
 
-  const acceptSystem = useCallback((name?: string) => {
-    commit((s) => ({
-      ...s,
-      initialized: true,
-      name: name?.trim() || "Player",
-    }));
+  const acceptSystem = useCallback((name?: string, profilePatch?: Partial<PlayerProfile>) => {
+    commit((s) => {
+      const realName = profilePatch?.realName?.trim() || name?.trim() || s.profile.realName || "Player";
+      const nextProfile = mergeProfile(s.profile, {
+        ...(profilePatch ?? {}),
+        realName,
+        onboardedAt: s.profile.onboardedAt ?? new Date().toISOString(),
+      });
+      return {
+        ...s,
+        initialized: true,
+        name: realName,
+        profile: nextProfile,
+      };
+    });
+  }, []);
+
+  const updateProfile = useCallback((patch: Partial<PlayerProfile>) => {
+    commit((s) => {
+      const nextProfile = mergeProfile(s.profile, patch);
+      // Keep display name synced when the real name is edited.
+      const nextName = patch.realName?.trim() ? patch.realName.trim() : s.name;
+      return { ...s, profile: nextProfile, name: nextName };
+    });
   }, []);
 
   const reset = useCallback(() => {
