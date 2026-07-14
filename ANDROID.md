@@ -1,58 +1,69 @@
-# Android APK build
+# SYSTEM — Android APK Üretim Rehberi
 
-The SYSTEM app is a Capacitor-wrapped TanStack Start build. Native
-integration lives under `src/lib/native/` so feature code never talks to
-Capacitor plugins directly (clean-architecture: infrastructure layer).
+Bu proje Capacitor 8 üzerinden native Android APK olarak paketlenmek üzere
+yapılandırıldı. Aşağıdaki adımlar hem Debug hem Release APK üretimini kapsar.
 
-## One-time setup (local machine)
+## 1. Ön Koşullar
 
-Requires: Node 20+, JDK 17, Android Studio + Android SDK.
+Yerel makinede kurulu olmalı:
+
+- **Node 20+** ve **bun** (bu deponun paket yöneticisi).
+- **JDK 17** (Android Gradle Plugin 8+ zorunluluğu).
+- **Android Studio Ladybug (2024.2)** veya üzeri — Android SDK 34+ ile.
+- Ortam değişkeni: `ANDROID_HOME` = Android SDK yolu.
+
+## 2. Web Katmanını Derle ve Capacitor'a Bağla
 
 ```bash
 bun install
-bun run build            # produces dist/
-bun run android:init     # creates ./android (only the first time)
-bun run android:sync     # copies dist/ into the Android project
-bun run android:open     # opens Android Studio to build/run/sign APK
+bun run android:build   # vite build + prepare-android + cap sync android
 ```
 
-The `android/` folder is a standard Gradle project — it is what Google Play
-expects. Sign a release APK / AAB from Android Studio → Build → Generate
-Signed Bundle. No source changes are needed between debug and release.
+`android:build` script'i şunları yapar:
 
-## Configuration
+1. `vite build` çalıştırır — Nitro çıktısı `.output/` altına düşer.
+2. `scripts/prepare-android.mjs` statik varlıkları `android-webroot/` içine
+   kopyalar. Capacitor `webDir` bu klasörü kullanır, yani APK internet olmadan
+   açılabilir.
+3. `cap sync android` `android/` klasörünü günceller (ilk çalıştırmadan önce
+   `bun run android:init` ile Android platformunu ekleyin).
 
-`capacitor.config.ts` at the repo root controls the native shell:
-
-- `appId`: `app.lovable.system` (change before first Play upload).
-- `appName`: `SYSTEM`.
-- `webDir`: `dist` (matches the Vite build output).
-- Dark theme colors match `src/styles.css` (`#0a0d1a`).
-
-To point a debug APK at a live dev server (hot reload on device) set
-`CAP_SERVER_URL` before syncing:
+## 3. Android Studio ile APK Üretimi
 
 ```bash
-CAP_SERVER_URL=https://<your-preview-url> bun run android:sync
+bun run android:open
 ```
 
-Leave `CAP_SERVER_URL` unset for release builds so the APK ships with
-bundled assets and works fully offline.
+Studio açıldığında:
 
-## What is already wired
+- **Debug APK**: `Build → Build Bundle(s) / APK(s) → Build APK(s)`
+- **Release APK / AAB**: `Build → Generate Signed Bundle / APK…`
+  - Keystore yoksa Studio üzerinden oluşturun (`New Keystore`).
+  - `build.gradle` içinde `versionCode` ve `versionName` değerlerini her
+    yeni sürümde artırın; kullanıcı verileri korunur (Capacitor Preferences
+    kalıcı depolamayı kullanır, uygulama yükseltmelerinde silinmez).
 
-- Hardware **back button** → routes through history, exits at root.
-- **Lifecycle** (`pause` / `resume`) → dispatched as `system:appstate` DOM
-  events; features can listen without importing Capacitor.
-- **Status bar** → dark, translucent, overlays the WebView (immersive).
-- **Splash screen** → auto-hides after React mounts.
-- **Permissions** → centralised in `src/lib/native/permissions.ts`
-  (`notifications`, `haptics`). Add new permissions here, never in feature
-  code.
-- Everything is guarded by `isNative()` so the web build is unaffected.
+APK çıktısı: `android/app/build/outputs/apk/{debug|release}/`
 
-## Not included on purpose
+## 4. Çevrimdışı Çalışma
 
-- No `android/` folder is committed — it is generated per machine via
-  `cap add android` to keep the repo Web-first and avoid Gradle churn.
-- No Play Store credentials, keystores, or CI signing config.
+- Tüm SYSTEM özellikleri (görevler, XP, streak, odak, profil) tamamen yerel
+  çalışır. İnternet gerektirmez.
+- Veri katmanı öncelik sırası: **Capacitor Preferences → LocalStorage**.
+  Preferences Android tarafından `/data/data/app.lovable.system/` altında
+  tutulur ve uygulama güncellemelerinde otomatik korunur.
+
+## 5. Google Play Yükleme Notları
+
+- `applicationId` = `app.lovable.system` (Capacitor `appId` ile eşleşir).
+- Release AAB kullanın (`Build → Generate Signed Bundle`).
+- Play Console'da yeni sürüm yüklerken `versionCode` artmalı; aksi halde
+  yükleme reddedilir.
+- Data safety formu: uygulama hiçbir kullanıcı verisini uzak sunucuya
+  göndermez, yalnızca cihazda saklar.
+
+## 6. İzinler
+
+Mevcut sürümde manifest sadece varsayılan izinleri talep eder
+(`INTERNET` isteğe bağlı, offline çalışır). Yeni özellikler için
+`src/lib/native/permissions.ts` merkezi izin katmanı kullanılmalıdır.

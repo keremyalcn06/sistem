@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfilDuzenleRouteImport } from './routes/profil-duzenle'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as OdakRouteImport } from './routes/odak'
 import { Route as IstatistikRouteImport } from './routes/istatistik'
@@ -16,6 +17,11 @@ import { Route as GorevlerRouteImport } from './routes/gorevler'
 import { Route as AyarlarRouteImport } from './routes/ayarlar'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ProfilDuzenleRoute = ProfilDuzenleRouteImport.update({
+  id: '/profil-duzenle',
+  path: '/profil-duzenle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfilRoute = ProfilRouteImport.update({
   id: '/profil',
   path: '/profil',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
   '/profil': typeof ProfilRoute
+  '/profil-duzenle': typeof ProfilDuzenleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
   '/profil': typeof ProfilRoute
+  '/profil-duzenle': typeof ProfilDuzenleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/istatistik': typeof IstatistikRoute
   '/odak': typeof OdakRoute
   '/profil': typeof ProfilRoute
+  '/profil-duzenle': typeof ProfilDuzenleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +90,16 @@ export interface FileRouteTypes {
     | '/istatistik'
     | '/odak'
     | '/profil'
+    | '/profil-duzenle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ayarlar' | '/gorevler' | '/istatistik' | '/odak' | '/profil'
+  to:
+    | '/'
+    | '/ayarlar'
+    | '/gorevler'
+    | '/istatistik'
+    | '/odak'
+    | '/profil'
+    | '/profil-duzenle'
   id:
     | '__root__'
     | '/'
@@ -91,6 +108,7 @@ export interface FileRouteTypes {
     | '/istatistik'
     | '/odak'
     | '/profil'
+    | '/profil-duzenle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,10 +118,18 @@ export interface RootRouteChildren {
   IstatistikRoute: typeof IstatistikRoute
   OdakRoute: typeof OdakRoute
   ProfilRoute: typeof ProfilRoute
+  ProfilDuzenleRoute: typeof ProfilDuzenleRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profil-duzenle': {
+      id: '/profil-duzenle'
+      path: '/profil-duzenle'
+      fullPath: '/profil-duzenle'
+      preLoaderRoute: typeof ProfilDuzenleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profil': {
       id: '/profil'
       path: '/profil'
@@ -156,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   IstatistikRoute: IstatistikRoute,
   OdakRoute: OdakRoute,
   ProfilRoute: ProfilRoute,
+  ProfilDuzenleRoute: ProfilDuzenleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

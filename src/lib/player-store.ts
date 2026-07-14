@@ -13,6 +13,12 @@ import {
 import { getRepository } from "./storage/adapters";
 import { STORAGE_KEYS, type StoredEnvelope } from "./storage/repository";
 import { ACHIEVEMENTS, evaluateAchievements, type UnlockedMap } from "./achievements";
+import {
+  emptyProfile,
+  mergeProfile,
+  profileCompletion,
+  type PlayerProfile,
+} from "./profile";
 
 // ---------------------------------------------------------------------------
 // Domain types
@@ -54,7 +60,11 @@ export type PlayerState = {
   title: string;
   /** Unlocked achievement id → ISO timestamp. */
   achievements: UnlockedMap;
+  /** Extended personal profile collected during first-run onboarding. */
+  profile: PlayerProfile;
 };
+
+export type { PlayerProfile } from "./profile";
 
 export type { Category, Difficulty, Priority } from "./economy";
 export { rankForLevel, xpForLevel, type Rank } from "./economy";
@@ -112,6 +122,7 @@ const initial = (): PlayerState => ({
   createdAt: new Date().toISOString(),
   title: "Beginner",
   achievements: {},
+  profile: emptyProfile(),
 });
 
 /**
@@ -143,6 +154,9 @@ function migrate(anyState: Partial<PlayerState> & Record<string, unknown>): Play
     ? (anyState.quests as Partial<Quest>[]).map(migrateQuest)
     : base.quests;
   merged.achievements = (anyState.achievements as UnlockedMap) ?? {};
+  // Merge profile so schema additions get filled with defaults instead of
+  // wiping user-entered fields. Old saves without `profile` get an empty one.
+  merged.profile = { ...emptyProfile(), ...(anyState.profile as Partial<PlayerProfile> | undefined ?? {}) };
   return merged;
 }
 
@@ -366,12 +380,30 @@ export function usePlayer() {
     commit((s) => ({ ...s, name }));
   }, []);
 
-  const acceptSystem = useCallback((name?: string) => {
-    commit((s) => ({
-      ...s,
-      initialized: true,
-      name: name?.trim() || "Player",
-    }));
+  const acceptSystem = useCallback((name?: string, profilePatch?: Partial<PlayerProfile>) => {
+    commit((s) => {
+      const realName = profilePatch?.realName?.trim() || name?.trim() || s.profile.realName || "Player";
+      const nextProfile = mergeProfile(s.profile, {
+        ...(profilePatch ?? {}),
+        realName,
+        onboardedAt: s.profile.onboardedAt ?? new Date().toISOString(),
+      });
+      return {
+        ...s,
+        initialized: true,
+        name: realName,
+        profile: nextProfile,
+      };
+    });
+  }, []);
+
+  const updateProfile = useCallback((patch: Partial<PlayerProfile>) => {
+    commit((s) => {
+      const nextProfile = mergeProfile(s.profile, patch);
+      // Keep display name synced when the real name is edited.
+      const nextName = patch.realName?.trim() ? patch.realName.trim() : s.name;
+      return { ...s, profile: nextProfile, name: nextName };
+    });
   }, []);
 
   const reset = useCallback(() => {
@@ -404,6 +436,10 @@ export function usePlayer() {
   const discipline = computeDiscipline(state);
   const rank = rankForLevel(state.level);
   const achievementCount = Object.keys(state.achievements).length;
+  const profilePct = profileCompletion(state.profile);
+  // Recent success rate — used by SYSTEM CORE for load / difficulty adaptation.
+  const totalAttempts = state.completedCount + state.failedCount;
+  const recentSuccessRate = totalAttempts > 0 ? state.completedCount / totalAttempts : 0.5;
 
   return {
     state,
@@ -415,6 +451,7 @@ export function usePlayer() {
     logFocus,
     setName,
     acceptSystem,
+    updateProfile,
     reset,
     exportSnapshot,
     importSnapshot,
@@ -424,5 +461,7 @@ export function usePlayer() {
     totalFocusMin,
     achievementCount,
     totalAchievements: ACHIEVEMENTS.length,
+    profileCompletion: profilePct,
+    recentSuccessRate,
   };
 }
