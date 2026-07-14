@@ -5,7 +5,10 @@ const devServerUrl = process.env.CAP_SERVER_URL;
 const config: CapacitorConfig = {
   appId: 'app.lovable.system',
   appName: 'SYSTEM',
-  webDir: '.output/public',
+
+  // Android içine koyulacak web dosyaları
+  webDir: 'android-webroot',
+
   bundledWebRuntime: false,
 
   android: {
@@ -54,3 +57,4 @@ const config: CapacitorConfig = {
 };
 
 export default config;
+
