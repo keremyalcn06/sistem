@@ -13,6 +13,12 @@ import {
 import { getRepository } from "./storage/adapters";
 import { STORAGE_KEYS, type StoredEnvelope } from "./storage/repository";
 import { ACHIEVEMENTS, evaluateAchievements, type UnlockedMap } from "./achievements";
+import {
+  emptyProfile,
+  mergeProfile,
+  profileCompletion,
+  type PlayerProfile,
+} from "./profile";
 
 // ---------------------------------------------------------------------------
 // Domain types
