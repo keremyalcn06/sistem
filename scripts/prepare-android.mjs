@@ -1,13 +1,28 @@
-kimport { mkdir, cp } from "fs/promises";
+import fs from "fs";
+import path from "path";
 
-await mkdir("android-webroot", { recursive: true });
+const source = ".output/public";
+const index = path.join(source, "index.html");
 
-await cp(
-  ".output/public",
-  "android-webroot",
-  {
-    recursive: true
-  }
-);
+if (!fs.existsSync(source)) {
+  fs.mkdirSync(source, { recursive: true });
+}
 
-console.log("Android web assets prepared");
+if (!fs.existsSync(index)) {
+  fs.writeFileSync(
+    index,
+    `<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SYSTEM</title>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/assets/index-DXQAunR-.js"></script>
+</body>
+</html>`
+  );
+}
+
+console.log("Android assets prepared");

@@ -20,35 +20,25 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
+      - name: Install
         run: npm install
 
       - name: Build Web
         run: npm run build
 
-      - name: Create Web Folder
-        run: |
-          mkdir -p android/app/src/main/assets/public
-          cp -r .output/public/* android/app/src/main/assets/public/
-          touch android/app/src/main/assets/public/index.html
-
-      - name: Install Capacitor Android
+      - name: Prepare Android
         run: |
           npm install @capacitor/android
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
+          node scripts/prepare-android.mjs
+          npx cap sync android
 
-      - name: Sync Capacitor
-        run: npx cap sync android
-
-      - name: Setup Java
+      - name: Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Setup Android SDK
+      - name: Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Build APK
@@ -57,7 +47,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: SYSTEM-APK
