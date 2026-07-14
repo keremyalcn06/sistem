@@ -35,10 +35,9 @@ jobs:
           fi
 
       - name: Prepare Web Assets
-        run: |
-          mkdir -p android/app/src/main/assets/public
-          cp -r .output/public/* android/app/src/main/assets/public/
-          touch android/app/src/main/assets/public/index.html
+  run: |
+    mkdir -p .output/public
+    touch .output/public/index.html
 
       - name: Capacitor Sync
         run: npx cap sync android

@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.system',
   appName: 'SYSTEM',
 
-  webDir: 'android/app/src/main/assets/public',
+  webDir: '.output/public',
 
   bundledWebRuntime: false,
 
