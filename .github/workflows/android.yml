@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -23,25 +24,30 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build Web
+        run: npm run build
+
+      - name: Install Capacitor Android
+        run: |
+          npm install @capacitor/android
+          npx cap add android
+
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p android/app/src/main/assets/public
+          cp -r .output/public/* android/app/src/main/assets/public/
+
+      - name: Capacitor Sync
+        run: npx cap sync android
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
-
-      - name: Setup Capacitor Android
-        run: |
-          npm install @capacitor/android
-          npx cap add android || true
-
-      - name: Build Web
-        run: npm run android:build
-
-      - name: Sync Capacitor
-        run: npx cap sync android
 
       - name: Build APK
         run: |
