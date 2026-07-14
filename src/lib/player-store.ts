@@ -122,6 +122,7 @@ const initial = (): PlayerState => ({
   createdAt: new Date().toISOString(),
   title: "Beginner",
   achievements: {},
+  profile: emptyProfile(),
 });
 
 /**
