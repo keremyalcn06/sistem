@@ -9,7 +9,7 @@
  */
 import { isNative } from "./platform";
 
-export type PermissionKind = "notifications" | "haptics";
+export type PermissionKind = "notifications" | "haptics" | "microphone";
 
 export interface PermissionResult {
   kind: PermissionKind;
@@ -21,8 +21,23 @@ export async function requestPermission(kind: PermissionKind): Promise<Permissio
   switch (kind) {
     case "notifications":
       return requestNotifications();
+    case "microphone":
+      return requestMicrophone();
     case "haptics":
       return { kind, granted: true }; // Android auto-grants; web no-op.
+  }
+}
+
+async function requestMicrophone(): Promise<PermissionResult> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    return { kind: "microphone", granted: false, reason: "unsupported" };
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return { kind: "microphone", granted: true };
+  } catch (err) {
+    return { kind: "microphone", granted: false, reason: String(err) };
   }
 }
 
