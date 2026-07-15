@@ -108,6 +108,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <SystemBoot />
+      <VoiceAssistant />
     </QueryClientProvider>
   );
 }
