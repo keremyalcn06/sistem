@@ -102,6 +102,8 @@ function RootComponent() {
     import("../lib/native/lifecycle").then(({ initNativeLifecycle }) => {
       initNativeLifecycle().then((fn) => { cleanup = fn; });
     }).catch(() => {});
+    // Restore user-selected accent color as early as possible.
+    import("../lib/theme").then(({ initTheme }) => { void initTheme(); }).catch(() => {});
     return () => { cleanup?.(); };
   }, []);
   return (
