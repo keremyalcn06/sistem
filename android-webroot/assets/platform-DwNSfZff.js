@@ -1,0 +1,1 @@
+import{t as e}from"./dist-COcOCb7M.js";function t(){try{return e.isNativePlatform()}catch{return!1}}export{t};
