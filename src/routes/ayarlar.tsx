@@ -3,7 +3,8 @@ import { AppShell } from "@/components/AppShell";
 import { usePlayer } from "@/lib/player-store";
 import { isMuted, setMuted, sfx } from "@/lib/sfx";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Volume2, VolumeX, Trash2, Download, Upload, Vibrate } from "lucide-react";
+import { Bell, Volume2, VolumeX, Trash2, Download, Upload, Vibrate, Palette, Check } from "lucide-react";
+import { THEME_PRESETS, DEFAULT_THEME_ID, applyTheme, saveTheme, loadThemeId, getPreset } from "@/lib/theme";
 
 export const Route = createFileRoute("/ayarlar")({
   head: () => ({
