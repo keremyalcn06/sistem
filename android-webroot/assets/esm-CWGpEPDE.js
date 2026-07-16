@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./web-cnyjGeEy.js","./dist-COcOCb7M.js"])))=>i.map(i=>d[i]);
+import{r as e}from"./dist-COcOCb7M.js";import{t}from"./preload-helper-kNaey6uv.js";var n=e(`Preferences`,{web:()=>t(()=>import(`./web-cnyjGeEy.js`).then(e=>new e.PreferencesWeb),__vite__mapDeps([0,1]),import.meta.url)});export{n as Preferences};
