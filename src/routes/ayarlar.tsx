@@ -150,6 +150,34 @@ function Settings() {
         </div>
       </div>
 
+      {/* Theme */}
+      <div className="panel p-5 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Palette className="w-4 h-4 text-primary" />
+          <div className="font-display text-[10px] tracking-widest text-primary uppercase">SYSTEM Renk Teması</div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {THEME_PRESETS.map((p) => {
+            const active = p.id === themeId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => selectTheme(p.id)}
+                className={`relative flex flex-col items-center gap-1.5 py-3 rounded-md border transition-all ${active ? "border-primary bg-primary/10 shadow-[0_0_16px_oklch(0.75_0.18_220/35%)]" : "border-border hover:border-primary/50"}`}
+                aria-pressed={active}
+              >
+                <span
+                  className="w-6 h-6 rounded-full border border-white/20"
+                  style={{ background: p.swatch, boxShadow: `0 0 10px ${p.swatch}80` }}
+                />
+                <span className="text-[9px] font-display tracking-widest uppercase text-muted-foreground">{p.label}</span>
+                {active && <Check className="absolute top-1 right-1 w-3 h-3 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Data */}
       <div className="panel p-5 mb-4">
         <div className="font-display text-[10px] tracking-widest text-primary uppercase mb-3">Veri Yönetimi</div>
