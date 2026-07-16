@@ -24,6 +24,7 @@ function Settings() {
   const [muted, setMutedState] = useState(false);
   const [haptic, setHaptic] = useState(true);
   const [notif, setNotif] = useState<"default" | "granted" | "denied" | "unsupported">("default");
+  const [themeId, setThemeId] = useState<string>(DEFAULT_THEME_ID);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,7 +32,16 @@ function Settings() {
     try { setHaptic(localStorage.getItem(HAPTIC_KEY) !== "0"); } catch { /* noop */ }
     if (typeof Notification === "undefined") setNotif("unsupported");
     else setNotif(Notification.permission as typeof notif);
+    loadThemeId().then((id) => { if (id) setThemeId(id); }).catch(() => {});
   }, []);
+
+  const selectTheme = (id: string) => {
+    setThemeId(id);
+    const preset = getPreset(id);
+    applyTheme(preset);
+    void saveTheme(id);
+    sfx.confirm();
+  };
 
   if (!hydrated) return <AppShell><div className="panel p-6 h-64 animate-pulse" /></AppShell>;
 
