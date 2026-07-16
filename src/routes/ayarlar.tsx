@@ -3,7 +3,8 @@ import { AppShell } from "@/components/AppShell";
 import { usePlayer } from "@/lib/player-store";
 import { isMuted, setMuted, sfx } from "@/lib/sfx";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Volume2, VolumeX, Trash2, Download, Upload, Vibrate } from "lucide-react";
+import { Bell, Volume2, VolumeX, Trash2, Download, Upload, Vibrate, Palette, Check } from "lucide-react";
+import { THEME_PRESETS, DEFAULT_THEME_ID, applyTheme, saveTheme, loadThemeId, getPreset } from "@/lib/theme";
 
 export const Route = createFileRoute("/ayarlar")({
   head: () => ({
@@ -23,6 +24,7 @@ function Settings() {
   const [muted, setMutedState] = useState(false);
   const [haptic, setHaptic] = useState(true);
   const [notif, setNotif] = useState<"default" | "granted" | "denied" | "unsupported">("default");
+  const [themeId, setThemeId] = useState<string>(DEFAULT_THEME_ID);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,7 +32,16 @@ function Settings() {
     try { setHaptic(localStorage.getItem(HAPTIC_KEY) !== "0"); } catch { /* noop */ }
     if (typeof Notification === "undefined") setNotif("unsupported");
     else setNotif(Notification.permission as typeof notif);
+    loadThemeId().then((id) => { if (id) setThemeId(id); }).catch(() => {});
   }, []);
+
+  const selectTheme = (id: string) => {
+    setThemeId(id);
+    const preset = getPreset(id);
+    applyTheme(preset);
+    void saveTheme(id);
+    sfx.confirm();
+  };
 
   if (!hydrated) return <AppShell><div className="panel p-6 h-64 animate-pulse" /></AppShell>;
 
@@ -136,6 +147,34 @@ function Settings() {
           >
             {notif === "granted" ? "AKTİF" : "İZİN VER"}
           </button>
+        </div>
+      </div>
+
+      {/* Theme */}
+      <div className="panel p-5 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Palette className="w-4 h-4 text-primary" />
+          <div className="font-display text-[10px] tracking-widest text-primary uppercase">SYSTEM Renk Teması</div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {THEME_PRESETS.map((p) => {
+            const active = p.id === themeId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => selectTheme(p.id)}
+                className={`relative flex flex-col items-center gap-1.5 py-3 rounded-md border transition-all ${active ? "border-primary bg-primary/10 shadow-[0_0_16px_oklch(0.75_0.18_220/35%)]" : "border-border hover:border-primary/50"}`}
+                aria-pressed={active}
+              >
+                <span
+                  className="w-6 h-6 rounded-full border border-white/20"
+                  style={{ background: p.swatch, boxShadow: `0 0 10px ${p.swatch}80` }}
+                />
+                <span className="text-[9px] font-display tracking-widest uppercase text-muted-foreground">{p.label}</span>
+                {active && <Check className="absolute top-1 right-1 w-3 h-3 text-primary" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 

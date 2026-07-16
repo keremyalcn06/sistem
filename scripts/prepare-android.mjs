@@ -1,17 +1,30 @@
-// Copies the Vite/Nitro client build (dist/client) into `android-webroot/`
-// (Capacitor `webDir`) and synthesizes an `index.html` that boots the
-// TanStack Start client bundle. Runs after `vite build`, before `cap sync`.
+// Copies the Vite/Nitro client build into `android-webroot/` (Capacitor
+// `webDir`) and synthesizes an `index.html` that boots the TanStack Start
+// client bundle. Runs after `vite build`, before `cap sync`.
+//
+// The canonical output for this template is `dist/client`. Older nitro
+// presets emitted `.output/public`; we accept it as a fallback so a stale
+// build directory never blocks the Android pipeline.
 import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const source = path.join(root, "dist", "client");
+const candidates = [
+  path.join(root, "dist", "client"),
+  path.join(root, ".output", "public"),
+];
+const source = candidates.find((p) => fs.existsSync(p));
 const target = path.join(root, "android-webroot");
 
-if (!fs.existsSync(source)) {
-  console.error("[android] dist/client not found — run `vite build` first.");
+if (!source) {
+  console.error(
+    "[android] No web build found. Expected one of:\n" +
+      candidates.map((c) => "  - " + c).join("\n") +
+      "\nRun `npm run build` (or `bun run build`) first.",
+  );
   process.exit(1);
 }
+console.log(`[android] using web build → ${path.relative(root, source)}`);
 
 // Wipe target (preserve nothing — every build must be self-consistent).
 fs.rmSync(target, { recursive: true, force: true });
