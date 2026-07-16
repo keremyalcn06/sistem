@@ -14,8 +14,8 @@
     "android:prepare": "node scripts/prepare-android.mjs",
     "android:sync": "node scripts/prepare-android.mjs && cap sync android",
     "android:open": "cap open android",
-    "android:build": "vite build && node scripts/prepare-android.mjs && npx cap sync android",
-    "android:release": "vite build && node scripts/prepare-android.mjs && cap sync android && cap open android"
+    "android:build": "node scripts/prepare-android.mjs && npx cap sync android",
+    "android:release": "node scripts/prepare-android.mjs && cap sync android && cap open android"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
