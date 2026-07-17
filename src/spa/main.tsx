@@ -7,6 +7,13 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "../router";
 
+try {
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (cap?.isNativePlatform?.()) document.documentElement.classList.add("system-native");
+} catch {
+  // Native marker is an optimization only; rendering must continue without it.
+}
+
 const router = getRouter();
 const container = document.getElementById("app");
 if (!container) {

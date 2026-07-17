@@ -14,8 +14,10 @@ const items = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { state, hydrated, xpNeeded } = usePlayer();
   const [levelUp, setLevelUp] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       setLevelUp(detail.level);
@@ -25,7 +27,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("player:levelup", handler);
   }, []);
 
-  const pct = hydrated ? Math.min(100, (state.xp / xpNeeded) * 100) : 0;
+  const ready = mounted && hydrated;
+  const pct = ready ? Math.min(100, (state.xp / xpNeeded) * 100) : 0;
 
   return (
     <div className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8 md:pl-64 select-none">
@@ -38,14 +41,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-display text-[11px] tracking-[0.3em] text-primary uppercase">SYSTEM</span>
           </div>
-          {hydrated && (
-            <div className="flex items-center gap-2">
-              <span className="font-display text-[10px] tracking-widest text-muted-foreground uppercase">LV.{state.level}</span>
+          <div className={`flex items-center gap-2 transition-opacity ${ready ? "opacity-100" : "opacity-0"}`} aria-hidden={!ready}>
+              <span className="font-display text-[10px] tracking-widest text-muted-foreground uppercase">LV.{ready ? state.level : 1}</span>
               <div className="w-16 h-1.5 bg-input rounded-full overflow-hidden border border-border">
                 <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
               </div>
             </div>
-          )}
         </div>
       </header>
 
@@ -76,18 +77,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </div>
-          {hydrated && (
-            <div className="panel p-3 space-y-2">
+          <div className={`panel p-3 space-y-2 transition-opacity ${ready ? "opacity-100" : "opacity-0"}`} aria-hidden={!ready}>
               <div className="flex items-center justify-between text-[10px] font-display tracking-widest text-muted-foreground uppercase">
-                <span>{state.name}</span>
-                <span className="text-primary">LV.{state.level}</span>
+                <span>{ready ? state.name : "Player"}</span>
+                <span className="text-primary">LV.{ready ? state.level : 1}</span>
               </div>
               <div className="h-1.5 bg-input rounded-full overflow-hidden">
                 <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
               </div>
-              <div className="text-[10px] text-muted-foreground text-right">{state.xp} / {xpNeeded} XP</div>
+              <div className="text-[10px] text-muted-foreground text-right">{ready ? state.xp : 0} / {ready ? xpNeeded : 100} XP</div>
             </div>
-          )}
         </div>
 
         {/* Mobile bottom nav */}

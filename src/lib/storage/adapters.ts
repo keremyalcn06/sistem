@@ -13,6 +13,22 @@
 import { isNative } from "../native/platform";
 import type { KeyValueRepository } from "./repository";
 
+const NATIVE_READ_TIMEOUT_MS = 900;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export class LocalStorageAdapter implements KeyValueRepository {
   readonly name = "localStorage";
   async get(key: string): Promise<string | null> {
@@ -76,7 +92,7 @@ export class CompositeAdapter implements KeyValueRepository {
   }
   async get(key: string): Promise<string | null> {
     for (const b of this.backends) {
-      const v = await b.get(key);
+      const v = await withTimeout(b.get(key), NATIVE_READ_TIMEOUT_MS);
       if (v != null) return v;
     }
     return null;

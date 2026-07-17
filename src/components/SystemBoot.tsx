@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "@/lib/player-store";
-import { sfx, unlockAudio } from "@/lib/sfx";
+import { sfx } from "@/lib/sfx";
 import { Onboarding } from "./Onboarding";
 import type { PlayerProfile } from "@/lib/profile";
 
@@ -27,8 +27,6 @@ export function SystemBoot() {
     if (state.initialized) { setPhase("done"); return; }
     if (bootedRef.current) return;
     bootedRef.current = true;
-    unlockAudio();
-    sfx.boot();
   }, [hydrated, state.initialized]);
 
   useEffect(() => {
@@ -71,7 +69,7 @@ export function SystemBoot() {
 
 
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/95 backdrop-blur-md animate-fade-in px-4">
+    <div className="fixed inset-0 z-[120] grid place-items-center bg-background/95 backdrop-blur-md animate-fade-in px-4 android-touch-layer">
       <div className="panel-glow corner-frame w-full max-w-lg p-6 md:p-10 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-rune-spin" />
         <div className="absolute -bottom-20 -left-10 w-52 h-52 rounded-full bg-accent/10 blur-3xl" />
@@ -116,7 +114,6 @@ export function SystemBoot() {
                   Player Kod Adı (opsiyonel)
                 </label>
                 <input
-                  autoFocus
                   className="bg-input rounded-md px-3 py-2.5 text-sm w-full outline-none focus:ring-2 focus:ring-primary/60 font-mono"
                   placeholder="Player"
                   value={name}
