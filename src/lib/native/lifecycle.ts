@@ -17,6 +17,10 @@ type Unsub = () => void;
 export async function initNativeLifecycle(): Promise<Unsub> {
   if (!isNative()) return () => {};
 
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.add("system-native");
+  }
+
   const unsubs: Unsub[] = [];
 
   try {
@@ -27,7 +31,7 @@ export async function initNativeLifecycle(): Promise<Unsub> {
     // Immersive dark status bar matching the SYSTEM theme.
     await StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
     await StatusBar.setBackgroundColor({ color: "#0a0d1a" }).catch(() => {});
-    await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+    await StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
 
     // Hide the splash once React has mounted.
     await SplashScreen.hide().catch(() => {});

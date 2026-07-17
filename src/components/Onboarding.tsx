@@ -68,7 +68,7 @@ export function Onboarding({ onDone }: { onDone: (p: Draft) => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-0 z-[120] bg-background/95 backdrop-blur-md overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] android-touch-layer">
       <div className="mx-auto max-w-lg px-4 py-6 md:py-10">
         <div className="mb-4">
           <div className="font-display text-[10px] tracking-[0.4em] text-primary uppercase">SYSTEM // ANALİZ</div>
@@ -186,7 +186,6 @@ function StepIdentity({ draft, patch }: { draft: Draft; patch: (p: Partial<Draft
           maxLength={32}
           placeholder="Adınız"
           onChange={(e) => patch({ realName: e.target.value })}
-          autoFocus
         />
       </Field>
     </div>

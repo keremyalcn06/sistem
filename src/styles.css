@@ -93,9 +93,26 @@
     min-height: 100vh;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-  button, a { -webkit-tap-highlight-color: transparent; }
+
+  input, textarea, select, button, a {
+    pointer-events: auto;
+  }
+
+  .android-touch-layer {
+    pointer-events: auto;
+    isolation: isolate;
+  }
+
+  html.system-native .backdrop-blur-md,
+  html.system-native .backdrop-blur-lg {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
 }
 
 @utility panel {
