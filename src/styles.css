@@ -108,6 +108,14 @@
     isolation: isolate;
   }
 
+  html.system-native .android-touch-layer {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
   html.system-native .backdrop-blur-md,
   html.system-native .backdrop-blur-lg {
     -webkit-backdrop-filter: none !important;
